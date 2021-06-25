@@ -4,6 +4,7 @@ import androidx.fragment.app.FragmentActivity;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -61,7 +62,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //        BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(spb));
 
-        getZones() ;
+        mMap.setOnCameraMoveListener(this::onCameraMove);
+        //getZones() ;
     }
 
     private void getZones() {
@@ -71,6 +73,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         //получаем координаты видимого прямоугольника карты
         LatLngBounds latLng = mMap.getProjection().getVisibleRegion().latLngBounds ;
+
+        Log.i("квадрат", String.valueOf(latLng)) ;
 
         Callback callback = new Callback() {
             @Override
@@ -112,6 +116,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
 
             mMap.addPolygon(polygonOptions) ;
+            Log.i("рисование","должно быть выполнено") ;
         }
 
        /* public void buildCircle (LatLng center, int radius) {
