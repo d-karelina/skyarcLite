@@ -5,15 +5,12 @@ import androidx.fragment.app.FragmentActivity;
 import android.graphics.Color;
 import android.os.Bundle;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.PolygonOptions;
 
 import org.jetbrains.annotations.NotNull;
@@ -25,13 +22,16 @@ import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
 import ru.aeroscript.skyarclite.api.GetRequest;
+import ru.aeroscript.skyarclite.api.JsonParsers;
 import ru.aeroscript.skyarclite.databinding.ActivityMapsBinding;
+import ru.aeroscript.skyarclite.zones.Zone;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+import static ru.aeroscript.skyarclite.Settings.*;
+
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnCameraMoveListener {
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
-    //private OkHttpClient client;
 
 
     @Override
@@ -45,65 +45,61 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
+        assert mapFragment != null;
         mapFragment.getMapAsync(this);
 
-        // формирование GET запроса
-        GetRequest getGeoJson = new GetRequest();
-
-        try {
-            getGeoJson.run("https://skyarc-dev.ru/caes/webapi/data/geojson/all", new Callback() {
-                @Override
-                public void onFailure(@NotNull Call call, @NotNull IOException e) {
-
-                }
-
-                @Override
-                public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                    String geo = String.valueOf(response.body());
-                    //ObjectMapper mapper = new ObjectMapper();
-
-                }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        //System.out.println(response);
     }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
         // Add a marker in SPb and move the camera
         LatLng spb = new LatLng(59.563178, 30.188478);
-        mMap.addMarker(new MarkerOptions().position(spb).title("Marker in SPb").icon(
-                BitmapDescriptorFactory
-                        .defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+        //mMap.addMarker(new MarkerOptions().position(spb).title("Marker in SPb").icon(
+        //        BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(spb));
-        init() ;
+
+        getZones() ;
     }
 
-    private void init() {
+    private void getZones() {
 
-        ArrayList<LatLng> polygons = new ArrayList<>() ;
-        polygons.add(new LatLng(-5, -10)) ;
-        polygons.add(new LatLng(-5, 0)) ;
-        polygons.add(new LatLng(5, 0)) ;
-        polygons.add(new LatLng(5, -10)) ;
+        // формирование GET запроса
+        GetRequest getGeoJson = new GetRequest();
 
-        new GeometryBuilder().buildPolygon(polygons) ;
-        new GeometryBuilder().buildCircle(new LatLng(0, 15), 500000);
+        //получаем координаты видимого прямоугольника карты
+        LatLngBounds latLng = mMap.getProjection().getVisibleRegion().latLngBounds ;
+
+        Callback callback = new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response)  {
+                String geo = String.valueOf(response.body());
+                ArrayList<Zone> zones = JsonParsers.parseManagedZones(geo) ;
+                for (Zone zone: zones) {
+                    new GeometryBuilder().buildPolygon(zone.getCoordinates()) ;
+                }
+
+            }
+        };
+        try {
+            getGeoJson.run(MANAGED_ZONES_AND_DISTRICTS, latLng, callback);
+        } catch (IOException e) {
+            e.printStackTrace() ;
+        }
 
 
+    }
+
+    @Override
+    public void onCameraMove() {
+        getZones() ;
     }
 
     public class GeometryBuilder {
@@ -114,17 +110,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             for (LatLng coordinate: coordinates) {
                 polygonOptions.add(coordinate) ;
             }
-            //polygonOptions.fillColor(Color.RED).strokeWidth(1).strokeColor(Color.RED) ;
+
             mMap.addPolygon(polygonOptions) ;
         }
 
-        public void buildCircle (LatLng center, int radius) {
+       /* public void buildCircle (LatLng center, int radius) {
             CircleOptions circleOptions = new CircleOptions()
                     .center(center).radius(radius)
                     .fillColor(Color.argb(70, 0, 255, 255)).strokeWidth(1)
                     .strokeColor(Color.DKGRAY);
 
             mMap.addCircle(circleOptions);
-        }
+        }*/
     }
 }
