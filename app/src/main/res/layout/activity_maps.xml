@@ -5,7 +5,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/constrainLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:theme="@android:style/Theme.Black.NoTitleBar">
 
 
     <fragment
@@ -21,16 +22,20 @@
         map:layout_constraintVertical_bias="0.0"
         tools:context=".MapsActivity" />
 
-    <Button
-        android:id="@+id/button5"
+    <CheckBox
+        android:id="@+id/displayManagedZones"
+        style="@android:style/Widget.DeviceDefault.CompoundButton.CheckBox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Показать ограничения"
-        map:backgroundTint="@color/purple_200"
+        android:checked="false"
+        android:text="Диспетчерские зоны"
+        android:textAppearance="@style/TextAppearance.AppCompat.Small"
+        android:textColor="@color/black"
         map:layout_constraintBottom_toBottomOf="parent"
         map:layout_constraintEnd_toEndOf="parent"
+        map:layout_constraintHorizontal_bias="0.205"
         map:layout_constraintStart_toStartOf="parent"
-        map:layout_constraintTop_toTopOf="parent"
-        map:layout_constraintVertical_bias="0.96" />
+        map:layout_constraintTop_toTopOf="@+id/map"
+        map:layout_constraintVertical_bias="0.105" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

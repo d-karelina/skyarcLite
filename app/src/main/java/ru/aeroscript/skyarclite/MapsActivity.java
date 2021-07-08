@@ -5,6 +5,7 @@ import androidx.fragment.app.FragmentActivity;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.CheckBox;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -18,6 +19,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Objects;
 
 import okhttp3.Call;
@@ -34,6 +37,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
+    private HashSet<Zone> zonesOnMap ;
+    private CheckBox displayManagedZones ;
 
 
     @Override
@@ -58,6 +63,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        zonesOnMap = new HashSet<>() ;
+        displayManagedZones = (CheckBox)findViewById(R.id.displayManagedZones);
 
         // Add a marker in SPb and move the camera
         LatLng spb = new LatLng(59.563178, 30.188478);
@@ -66,12 +73,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mMap.moveCamera(CameraUpdateFactory.newLatLng(spb));
 
+        //устанавлием слушателя передвижения камеры
         mMap.setOnCameraIdleListener(this) ;
         mMap.setMinZoomPreference(6.0f);
         mMap.setMaxZoomPreference(14.0f);
-        //getZones() ;
+
     }
 
+    // метод, который отвечает за формирование зон
     private void getZones() {
 
         // формирование GET запроса
@@ -80,7 +89,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //получаем координаты видимого прямоугольника карты
         LatLngBounds latLng = mMap.getProjection().getVisibleRegion().latLngBounds ;
 
-        Log.i("квадрат", String.valueOf(latLng)) ;
+        //Log.i("квадрат", String.valueOf(latLng)) ;
 
         Callback callback = new Callback() {
             @Override
@@ -93,18 +102,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onResponse(@NotNull Call call, @NotNull Response response)  {
                 String geo = null;
                 try {
+                    //записываем ответ JSON в строку
                     geo = Objects.requireNonNull(response.body()).string();
-                    Log.i("json",geo) ;
+                    //Log.i("json",geo) ;
+                    // с помощью статического метода парсим JSON строку в объекты зон
                     ArrayList<Zone> zones = JsonParsers.parseManagedZones(geo) ;
+
+                    //перебираем получившиеся зоны и выводим их на экран.
+                    boolean alreadyExists = false ;
                     for (Zone zone: zones) {
-                        new GeometryBuilder().buildPolygon(zone.getCoordinates()) ;
+                        for (Zone zoneOnMap: zonesOnMap) {
+                            if (((zone.getName().equals(zoneOnMap.getName()))
+                                    && zone.getCoordinates().equals(zoneOnMap.getCoordinates()))) {
+                                alreadyExists = true ;
+                                break ;
+                            }
+                        }
+                        if (!(alreadyExists)) {
+                            new GeometryBuilder().buildPolygon(zone.getCoordinates());
+                            zonesOnMap.add(zone) ;
+                        }
                     }
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         };
         try {
+            // вызываем запрос, передаем строку, параметры и перечень инструкций
             getGeoJson.run(MANAGED_ZONES_AND_DISTRICTS, latLng, callback);
         } catch (IOException e) {
             e.printStackTrace() ;
@@ -115,26 +141,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onCameraIdle() {
-        getZones() ;
+        if (displayManagedZones.isChecked()) {
+            getZones();
+        } else mMap.clear() ;
     }
 
     public class GeometryBuilder {
         public void buildPolygon (ArrayList<LatLng> coordinates) {
             PolygonOptions polygonOptions = new PolygonOptions()
-                    .fillColor(Color.argb(70, 0, 255, 255)).strokeWidth(1)
+                    .fillColor(Color.argb(60, 230, 46, 120)).strokeWidth(1)
                     .strokeColor(Color.DKGRAY) ;
-            /*for (int i = 0; i < coordinates.size(); i++) {
-                polygonOptions.add(coordinates.get(i)) ;
-            }*/
+
             for (LatLng coordinate: coordinates) {
                 polygonOptions.add(coordinate) ;
             }
 
+            // в отдельном потоке выводим зоны на карту
             runOnUiThread(() -> mMap.addPolygon(polygonOptions)) ;
 
-            Log.i("рисование","должно быть выполнено") ;
+            //Log.i("рисование","должно быть выполнено") ;
         }
 
+        //дополнительный метод на случай, если появлятся круговые зоны с радиусом.
        /* public void buildCircle (LatLng center, int radius) {
             CircleOptions circleOptions = new CircleOptions()
                     .center(center).radius(radius)

@@ -39,13 +39,11 @@ public class JsonParsers {
                 }
                 zones.add(new Zone((String) ((JSONObject) o).get("name"),latLngs)) ;
             }
-            Log.i("парсер","работает") ;
+            //Log.i("парсер","работает") ;
 
         } catch (ParseException e) {
             Log.i("ParseException", "не удалось получить JSONObject из строки");
         }
-
-
 
 
         return zones ;
