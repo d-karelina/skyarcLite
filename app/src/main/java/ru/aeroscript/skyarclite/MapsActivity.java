@@ -5,6 +5,7 @@ import androidx.fragment.app.FragmentActivity;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.CheckBox;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -19,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
 
@@ -47,6 +47,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        CheckboxHandler checkboxHandler = new CheckboxHandler() ;
+        binding.setHandler(checkboxHandler) ;
 
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -100,11 +103,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response)  {
-                String geo = null;
+                String geo;
                 try {
                     //записываем ответ JSON в строку
                     geo = Objects.requireNonNull(response.body()).string();
-                    //Log.i("json",geo) ;
+                    Log.i("json",geo) ;
                     // с помощью статического метода парсим JSON строку в объекты зон
                     ArrayList<Zone> zones = JsonParsers.parseManagedZones(geo) ;
 
@@ -146,6 +149,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         } else mMap.clear() ;
     }
 
+    public void onCheck(View view) {
+        if (displayManagedZones.isChecked()) {
+            getZones();
+        } else mMap.clear() ;
+    }
+
     public class GeometryBuilder {
         public void buildPolygon (ArrayList<LatLng> coordinates) {
             PolygonOptions polygonOptions = new PolygonOptions()
@@ -159,7 +168,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // в отдельном потоке выводим зоны на карту
             runOnUiThread(() -> mMap.addPolygon(polygonOptions)) ;
 
-            //Log.i("рисование","должно быть выполнено") ;
+            Log.i("рисование","должно быть выполнено") ;
         }
 
         //дополнительный метод на случай, если появлятся круговые зоны с радиусом.
@@ -172,4 +181,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.addCircle(circleOptions);
         }*/
     }
+    public class CheckboxHandler {
+        public void onCheck(View view) {
+            if (displayManagedZones.isChecked()) {
+                getZones();
+            } else mMap.clear() ;
+        }
+    }
+
 }

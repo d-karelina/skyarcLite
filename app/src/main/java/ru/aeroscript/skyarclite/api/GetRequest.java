@@ -19,7 +19,7 @@ public class GetRequest {
   public void run(String urlString, LatLngBounds latLng, Callback callback) throws IOException {
     // из переданных координат выкидываем все, кроме чисел и запятых
     String latLngStr = "[" + latLng.toString().replaceAll("[^\\d0-9,.]", "") + "]";
-    //Log.i("метка",latLngStr) ;
+    Log.i("метка",latLngStr) ;
 
     //строим строку запроса, добавляя параметры
     HttpUrl url = HttpUrl.parse(urlString).newBuilder()
