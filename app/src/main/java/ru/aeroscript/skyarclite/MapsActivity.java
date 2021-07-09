@@ -67,7 +67,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         zonesOnMap = new HashSet<>() ;
-        displayManagedZones = (CheckBox)findViewById(R.id.displayManagedZones);
+        displayManagedZones = findViewById(R.id.displayManagedZones);
 
         // Add a marker in SPb and move the camera
         LatLng spb = new LatLng(59.563178, 30.188478);
@@ -121,6 +121,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 break ;
                             }
                         }
+
                         if (!(alreadyExists)) {
                             new GeometryBuilder().buildPolygon(zone.getCoordinates());
                             zonesOnMap.add(zone) ;
@@ -146,14 +147,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onCameraIdle() {
         if (displayManagedZones.isChecked()) {
             getZones();
-        } else mMap.clear() ;
+        } else {
+            mMap.clear() ;
+            zonesOnMap.clear() ;
+        }
     }
 
-    public void onCheck(View view) {
-        if (displayManagedZones.isChecked()) {
-            getZones();
-        } else mMap.clear() ;
-    }
 
     public class GeometryBuilder {
         public void buildPolygon (ArrayList<LatLng> coordinates) {
@@ -185,7 +184,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         public void onCheck(View view) {
             if (displayManagedZones.isChecked()) {
                 getZones();
-            } else mMap.clear() ;
+            } else {
+                mMap.clear() ;
+                zonesOnMap.clear() ;
+            }
         }
     }
 
